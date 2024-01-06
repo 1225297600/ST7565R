@@ -9,8 +9,8 @@
 
 /*
 	Addr	:	0x78
-	�ֲ�д��9ҳ��ʵ��ֻ��8ҳ��д��9ҳ�Ḳ�ǵ�1ҳ
-	DRV_ST7565R.status.ram = 65x132��
+	ÊÖ²áÐ´µÄ9Ò³£¬Êµ²âÖ»ÓÐ8Ò³£¬Ð´µÚ9Ò³»á¸²¸ÇµÚ1Ò³
+	DRV_ST7565R.status.ram = 65x132£º
 	[byte-0 bit-0]	[byte-1 bit-0] ... [byte-16 bit-0] [byte-17 bit-0]
 	[byte-0 bit-1]
 	[byte-0 bit-2]
@@ -31,10 +31,10 @@
 typedef struct{
 	struct{
 		uint8_t addr;
-		uint8_t w;//����
-		uint8_t h;//�߶�
-		uint8_t dx;//��ƫ��
-		uint8_t dy;//��ƫ��
+		uint8_t w;//¿í¶È
+		uint8_t h;//¸ß¶È
+		uint8_t dx;//ÁÐÆ«ÒÆ
+		uint8_t dy;//ÐÐÆ«ÒÆ
 	}set;
 	
 	struct{
@@ -48,7 +48,16 @@ typedef struct{
 	}hal;
 }DRV_ST7565R;
 
-void DRV_ST7565R_Init(DRV_ST7565R *st7565r, uint8_t fill);
+void DRV_ST7565R_Init(DRV_ST7565R *st7565r, 
+	uint8_t fill,
+	uint8_t addr,
+	uint8_t w,//¿í¶È
+	uint8_t h,//¸ß¶È
+	uint8_t dx,//ÁÐÆ«ÒÆ
+	uint8_t dy,//ÐÐÆ«ÒÆ
+	void (*delay_ms)(uint32_t ms),
+	void (*iic_transmit)(uint8_t dev, uint8_t *data, uint16_t len),
+	void (*iic_receive)(uint8_t dev, uint8_t *data, uint16_t len));
 void DRV_ST7565R_Refresh(DRV_ST7565R *st7565r);
 void DRV_ST7565R_Point(DRV_ST7565R *st7565r, uint8_t x, uint8_t y, bool on);
 
