@@ -6,23 +6,19 @@
 
 #include "drv_fonts.h"
 
-static void DRV_GUI_DrawPoint(DRV_LATTICE_GUI *gui, uint16_t x, uint16_t y, bool on){
-	if(gui->hal.DrawPoint != NULL){
-		gui->hal.DrawPoint(x,y,on);
-	}else{
-		
-	}
-}
 
-static void DRV_GUI_DrawUpload(DRV_LATTICE_GUI *gui){
-	if(gui->hal.DrawUpload != NULL){
-		gui->hal.DrawUpload();
-	}else{
-		
-	}
-}
-
+static void DRV_GUI_DrawPoint(DRV_LATTICE_GUI *gui, uint16_t x, uint16_t y, bool on);
+static void DRV_GUI_DrawUpload(DRV_LATTICE_GUI *gui);
 /**********************************************************  **********************************************************/
+void DRV_LATTICE_GUI_Init(DRV_LATTICE_GUI *gui, 
+		char *buff, uint16_t len,
+		void (*drawPoint)(uint16_t x, uint16_t y, bool on),
+		void (*drawUpload)(void)){
+	gui->print.buff = buff;
+	gui->print.len = len;
+	gui->hal.drawPoint = drawPoint;
+	gui->hal.drawUpload = drawUpload;
+}
 
 void DRV_LATTICE_GUI_Upload(DRV_LATTICE_GUI *gui){
 	DRV_GUI_DrawUpload(gui);
@@ -37,10 +33,10 @@ void DRV_LATTICE_GUI_Line(DRV_LATTICE_GUI *gui, uint16_t start_x, uint16_t start
 	int x, y;
 	float k, b;
 	
-	//横线
+	//潞谩脧脽
 	if(end_y == start_y){
 		if(start_x > end_x){
-			//交换方向
+			//陆禄禄禄路陆脧貌
 			x = end_x;
 			end_x = start_x;
 			start_x = x;
@@ -51,10 +47,10 @@ void DRV_LATTICE_GUI_Line(DRV_LATTICE_GUI *gui, uint16_t start_x, uint16_t start
 		return;
 	}
 	
-	//竖线
+	//脢煤脧脽
 	if(end_x == start_x){
 		if(start_y > end_y){
-			//交换方向
+			//陆禄禄禄路陆脧貌
 			y = end_y;
 			end_y = start_y;
 			start_y = y;
@@ -65,7 +61,7 @@ void DRV_LATTICE_GUI_Line(DRV_LATTICE_GUI *gui, uint16_t start_x, uint16_t start
 		return;
 	}
 	
-	//非竖线和横线
+	//路脟脢煤脧脽潞脥潞谩脧脽
 	k = (end_y - start_y);
 	k /= (end_x - start_x);
 	b = start_y;
@@ -106,7 +102,7 @@ void DRV_LATTICE_GUI_Imag(DRV_LATTICE_GUI *gui, uint16_t x, uint16_t y, uint16_t
 	uint16_t dbyte, dbit, dx, dy;
 	uint8_t check_byte;
 	bool on;
-	//horiz=true 水平扫描，lsb小端模式（低低）
+	//horiz=true 脣庐脝陆脡篓脙猫拢卢lsb脨隆露脣脛拢脢陆拢篓碌脥碌脥拢漏
 	const uint16_t bit = w*h;
 	
 	for(uint16_t i=0; i<bit; i++){
@@ -154,7 +150,7 @@ void DRV_LATTICE_GUI_Print(DRV_LATTICE_GUI *gui, DRV_LATTICE_GUI_FONTS fonts, ui
 	}
 	va_end(ap);
 	for(uint16_t i=0; i< strlen(gui->print.buff); i++){
-		//[sp]开头 [~]结尾 暂时只做了这些字符
+		//[sp]驴陋脥路 [~]陆谩脦虏 脭脻脢卤脰禄脳枚脕脣脮芒脨漏脳脰路没
 		if((gui->print.buff[i] < ' ') ||
 			(gui->print.buff[i] > '~'))
 		{
@@ -166,7 +162,7 @@ void DRV_LATTICE_GUI_Print(DRV_LATTICE_GUI *gui, DRV_LATTICE_GUI_FONTS fonts, ui
 				DRV_LATTICE_GUI_Imag(gui, x+6*i,y, 6,8, (uint8_t*)DRV_FONTS_W6H8[gui->print.buff[i]-' '], false, true);
 				break;
 			case GUI_FONTS_W8H16:
-				//这个字体是分上下两块
+				//脮芒赂枚脳脰脤氓脢脟路脰脡脧脧脗脕陆驴茅
 				DRV_LATTICE_GUI_Imag(gui, x+8*i,y, 8,8, (uint8_t*)DRV_FONTS_W8H16[gui->print.buff[i]-' '], false, true);
 				DRV_LATTICE_GUI_Imag(gui, x+8*i,y+8, 8,8, (uint8_t*)&DRV_FONTS_W8H16[gui->print.buff[i]-' '][8], false, true);
 				break;
@@ -178,10 +174,10 @@ void DRV_LATTICE_GUI_Print(DRV_LATTICE_GUI *gui, DRV_LATTICE_GUI_FONTS fonts, ui
 void DRV_LATTICE_GUI_Round(DRV_LATTICE_GUI *gui, uint16_t center_x, uint16_t center_y, uint16_t r, bool on){
 	double x, y;
 	
-	//(x)^2+(y)^w=r^2 圆心在原点（0，0）
+	//(x)^2+(y)^w=r^2 脭虏脨脛脭脷脭颅碌茫拢篓0拢卢0拢漏
 	//(x-center_x)^2+(y-center_y)^w=r^2
 	
-	//填充x方向
+	//脤卯鲁盲x路陆脧貌
 	for(x=-r; x<(r); x++){
 		y = sqrt(fabs( pow(r,2) - pow(x,2) ));
 		if(((-y + center_y) > 0)
@@ -194,7 +190,7 @@ void DRV_LATTICE_GUI_Round(DRV_LATTICE_GUI *gui, uint16_t center_x, uint16_t cen
 		}
 	}//for
 	
-	//填充y方向
+	//脤卯鲁盲y路陆脧貌
 	for(y=-r; y<(r); y++){
 		x = sqrt(fabs( pow(r,2) - pow(y,2) ));
 		if(((y + center_y) > 0)
@@ -217,4 +213,22 @@ void DRV_LATTICE_GUI_Rectangle(DRV_LATTICE_GUI *gui, uint16_t x, uint16_t y, uin
 }
 
 
+
+
+/**********************************************************  **********************************************************/
+static void DRV_GUI_DrawPoint(DRV_LATTICE_GUI *gui, uint16_t x, uint16_t y, bool on){
+	if(gui->hal.drawPoint != NULL){
+		gui->hal.drawPoint(x,y,on);
+	}else{
+		
+	}
+}
+
+static void DRV_GUI_DrawUpload(DRV_LATTICE_GUI *gui){
+	if(gui->hal.DrawUpload != NULL){
+		gui->hal.DrawUpload();
+	}else{
+		
+	}
+}
 
