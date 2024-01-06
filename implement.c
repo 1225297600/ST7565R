@@ -20,23 +20,11 @@ static void DISPLAY_OledUpload(void);
 void DISPLAY_Init(DISPLAY_INIT init){
 	memmove(&display.init, &init, sizeof(DISPLAY_INIT));
 	
-	st7565r.hal.delay_ms = BOARD_DELAY_Ms;//delay ms function ÑÓÊ±ºÁÃëº¯Êı
-	st7565r.hal.iic_receive = BOARD_IIC2_Recieve;//IIC recieve function IIC½ÓÊÕº¯Êı
-	st7565r.hal.iic_transmit = BOARD_IIC2_Transmit;//IIC transmit function IIC·¢ËÍº¯Êı
-	st7565r.set.addr = 0x78;//IIC address IICÉè±¸µØÖ·
-	st7565r.set.w = 128;//screen width ÆÁÄ»¿í¶È
-	st7565r.set.h = 64;//screen height ÆÁÄ»¸ß¶È
-	st7565r.set.dx = 2;//screen width offset ÆÁÄ»ºáÏòÆ«ÒÆ
-	st7565r.set.dy = 0;//screen height offset ÆÁÄ»×İÏòÆ«ÒÆ
-	DRV_ST7565R_Init(&st7565r, 0x00);//screen Driver Init ÆÁÄ»Çı¶¯³õÊ¼»¯
+	DRV_ST7565R_Init(&st7565r, 0x00, 0x78, 128,64, 2,0, BOARD_DelayMs, IMPT_I2C_Receive, IMPT_I2C_Transmit);//screen Driver Init
+	DRV_LATTICE_GUI_Init(&lat_gui, gui_print_buff, 128, DISPLAY_OledPoint, DISPLAY_OledUpload);
 	
-	lat_gui.hal.DrawPoint = DISPLAY_OledPoint;//GUI draw point interface  GUI»æÖÆÒ»¸öµãµÄ½Ó¿Ú
-	lat_gui.hal.DrawUpload = DISPLAY_OledUpload;//GUI all draw interface  GUIÈ«²¿Ë¢ĞÂµÄ½Ó¿Ú
-	lat_gui.print.buff = gui_print_buff;//GUI cache buff GUI»º´æ
-	lat_gui.print.len = 128;//GUI cache size GUI»º´æ´óĞ¡
-	
-//	DISPLAY_OledTest();//screen drv basec test ÆÁÄ»Çı¶¯²âÊÔ
-//	DISPLAY_GuiTest();//GUI interface test GUI½Ó¿Ú²âÊÔ
+//	DISPLAY_OledTest();//screen drv basec test å±å¹•é©±åŠ¨æµ‹è¯•
+//	DISPLAY_GuiTest();//GUI interface test GUIæ¥å£æµ‹è¯•
 	
 }
 
@@ -63,29 +51,29 @@ static void DISPLAY_OledUpload(void){
 
 ///********************************************************** Test **********************************************************/
 //static uint8_t img_connected[]={
-//	//MSB  ¿í¶Èx¸ß¶È=13x8  Ë®Æ½É¨Ãè
+//	//MSB  å®½åº¦xé«˜åº¦=13x8  æ°´å¹³æ‰«æ
 //	0x0D,0x00,0x6C,0x03,0x79,0xDB,0xFF,0xDB,0xBE,0xC0,0x36,0x00,0xB0
 //};
 
 //static void DISPLAY_GuiTest(void){
-//	//2Ïß1µã
+//	//2çº¿1ç‚¹
 //	DRV_LATTICE_GUI_Line(&lat_gui, 0,63, 127,0, true);
 //	DRV_LATTICE_GUI_Line(&lat_gui, 0,0, 127,63, true);
 //	DRV_LATTICE_GUI_Point(&lat_gui, 0,32, true);
 //	
-//	//Ìî³äÒ»¿é
+//	//å¡«å……ä¸€å—
 //	DRV_LATTICE_GUI_Fill(&lat_gui, 100,32, 5,5,  true);
 //	
-//	//ÏÔÊ¾Í¼Æ¬
+//	//æ˜¾ç¤ºå›¾ç‰‡
 //	DRV_LATTICE_GUI_Imag(&lat_gui, 10,32, 13,8, img_connected, true, false);
 //	
-//	//×Ö·û
+//	//å­—ç¬¦
 //	DRV_LATTICE_GUI_Print(&lat_gui, GUI_FONTS_W6H8, 50,0, "test");
 //	
-//	//»­Ô²
+//	//ç”»åœ†
 //	DRV_LATTICE_GUI_Round(&lat_gui, 64,32, 16,  true);
 //	
-//	//¾ØĞÎ
+//	//çŸ©å½¢
 //	DRV_LATTICE_GUI_Rectangle(&lat_gui, 40,10, 48,44,  true);
 //	
 //	DRV_LATTICE_GUI_Upload(&lat_gui);
@@ -97,10 +85,10 @@ static void DISPLAY_OledUpload(void){
 //	DRV_ST7565R_Point(&st7565r, 127,0, true);
 //	DRV_ST7565R_Point(&st7565r, 127,63, true);
 //	
-//	//Èı¸öµãĞÎ³ÉÒ»¸ö7ĞÎ
-//	DRV_ST7565R_Point(&st7565r, 65,32, true);//ÓÒÉÏ½Ç
-//	DRV_ST7565R_Point(&st7565r, 65,33, true);//ÓÒÏÂ½Ç
-//	DRV_ST7565R_Point(&st7565r, 64,32, true);//×óÉÏ½Ç
+//	//ä¸‰ä¸ªç‚¹å½¢æˆä¸€ä¸ª7å½¢
+//	DRV_ST7565R_Point(&st7565r, 65,32, true);//å³ä¸Šè§’
+//	DRV_ST7565R_Point(&st7565r, 65,33, true);//å³ä¸‹è§’
+//	DRV_ST7565R_Point(&st7565r, 64,32, true);//å·¦ä¸Šè§’
 //	
 //	DRV_ST7565R_Refresh(&st7565r);
 //}
