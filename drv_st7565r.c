@@ -3,7 +3,119 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-void DRV_ST7565R_Transmit(DRV_ST7565R *st7565r, uint8_t dev, uint8_t *data, uint16_t len)
+
+static void DRV_ST7565R_Transmit(DRV_ST7565R *st7565r, uint8_t dev, uint8_t *data, uint16_t len);
+static void DRV_ST7565R_Receive(DRV_ST7565R *st7565r, uint8_t dev, uint8_t *data, uint16_t len);
+static void DRV_ST7565R_DelayMs(DRV_ST7565R *st7565r, uint32_t ms);
+
+static void DRV_ST7565R_WriteByte(DRV_ST7565R *st7565r, uint8_t reg_addr,uint8_t data);
+static uint8_t DRV_ST7565R_ReadByte(DRV_ST7565R *st7565r, uint8_t reg_addr);
+
+static void DRV_ST7565R_WriteCmd(DRV_ST7565R *st7565r, uint8_t cmd);
+static void DRV_ST7565R_WriteData(DRV_ST7565R *st7565r, uint8_t cmd);
+
+static void DRV_ST7565R_SetDisplay(DRV_ST7565R *st7565r, bool on);
+static void DRV_ST7565R_SetStartLine(DRV_ST7565R *st7565r, uint8_t line);
+static void DRV_ST7565R_SetPoint(DRV_ST7565R *st7565r, uint8_t x, uint8_t page); //ÉèÖÃÆðÊ¼µã×ø±ê
+static void DRV_ST7565R_SetContrast(DRV_ST7565R *st7565r, float pct);
+static void DRV_ST7565R_SetReverseLR(DRV_ST7565R *st7565r, bool reverse);
+static void DRV_ST7565R_SetReverseUP(DRV_ST7565R *st7565r, bool reverse);
+static void DRV_ST7565R_SetReversePoint(DRV_ST7565R *st7565r, bool reverse);
+static void DRV_ST7565R_SetRamDisable(DRV_ST7565R *st7565r, bool disable);
+static void DRV_ST7565R_SetAllPoint(DRV_ST7565R *st7565r, bool force_open);
+static void DRV_ST7565R_SetOffset(DRV_ST7565R *st7565r, uint8_t offset);
+static void DRV_ST7565R_SetMultiplex(DRV_ST7565R *st7565r, uint8_t multiplex);
+static void DRV_ST7565R_SetCycDiv(DRV_ST7565R *st7565r, uint8_t div);
+static void DRV_ST7565R_SetChargeCycNum(DRV_ST7565R *st7565r, uint8_t cyc_num);
+static void DRV_ST7565R_SetCom_(DRV_ST7565R *st7565r, uint8_t com_);
+static void DRV_ST7565R_SetVcomh(DRV_ST7565R *st7565r, uint8_t vcomh);
+static void DRV_ST7565R_SetDcdc(DRV_ST7565R *st7565r, bool on);
+
+static void DRV_ST7565R_Display(DRV_ST7565R *st7565r);
+/**********************************************************  **********************************************************/
+//³õÊ¼»¯OLED
+void DRV_ST7565R_Init(DRV_ST7565R *st7565r, 
+	uint8_t fill,
+	uint8_t addr,
+	uint8_t w,//¿í¶È
+	uint8_t h,//¸ß¶È
+	uint8_t dx,//ÁÐÆ«ÒÆ
+	uint8_t dy,//ÐÐÆ«ÒÆ
+	void (*delay_ms)(uint32_t ms),
+	void (*iic_transmit)(uint8_t dev, uint8_t *data, uint16_t len),
+	void (*iic_receive)(uint8_t dev, uint8_t *data, uint16_t len)){
+	
+	st7565r->hal.delay_ms = delay_ms;
+	st7565r->hal.iic_transmit = iic_transmit;
+	st7565r->hal.iic_receive = iic_receive;
+	st7565r->set.addr = addr;//IIC address
+	st7565r->set.w = w;//screen width
+	st7565r->set.h = h;//screen height
+	st7565r->set.dx = dx;//screen width offset
+	st7565r->set.dy = dy;//screen height offset
+	
+	DRV_ST7565R_DelayMs(st7565r, 100);//ÕâÀïµÄÑÓÊ±ºÜÖØÒª
+	
+	DRV_ST7565R_SetDisplay(st7565r, false);
+		
+	DRV_ST7565R_WriteCmd(st7565r,0x20);	//Set Memory Addressing Mode	
+	DRV_ST7565R_WriteCmd(st7565r, 0x10);	//00,Horizontal Addressing Mode;01,Vertical Addressing Mode;10,Page Addressing Mode (RESET);11,Invalid
+	
+	
+	DRV_ST7565R_SetMultiplex(st7565r, 0x3F);//
+	DRV_ST7565R_SetRamDisable(st7565r, false);
+	DRV_ST7565R_SetOffset(st7565r, 0);
+	DRV_ST7565R_SetCycDiv(st7565r, 0xf0);
+	DRV_ST7565R_SetChargeCycNum(st7565r, 0x22);
+	DRV_ST7565R_SetCom_(st7565r, 0x12);//
+	DRV_ST7565R_SetVcomh(st7565r, 0x20);//=Vcc*0.77
+	DRV_ST7565R_SetDcdc(st7565r, true);
+	
+	DRV_ST7565R_SetContrast(st7565r, 50);
+	
+	DRV_ST7565R_SetStartLine(st7565r, 0);
+	DRV_ST7565R_SetPoint(st7565r, 0, 0);
+	DRV_ST7565R_SetReverseLR(st7565r, false);
+	DRV_ST7565R_SetReverseUP(st7565r, false);
+	DRV_ST7565R_SetReversePoint(st7565r, false);
+	
+	DRV_ST7565R_SetDisplay(st7565r, true);
+	
+	DRV_ST7565R_DelayMs(st7565r, 100); //ÕâÀïµÄÑÓÊ±ºÜÖØÒª
+	memset(st7565r->status.ram , fill, ST7565R_PAGE*ST7565R_W);
+	DRV_ST7565R_Display(st7565r);
+}
+
+void DRV_ST7565R_Refresh(DRV_ST7565R *st7565r){
+	DRV_ST7565R_Display(st7565r);
+}
+
+void DRV_ST7565R_Point(DRV_ST7565R *st7565r, uint8_t x, uint8_t y, bool on){
+	//Æ«ÒÆ
+	x += st7565r->set.dx;
+	y += st7565r->set.dy;
+	
+	//ÅÐ¶Ï
+	if(y >= ST7565R_H){
+		return;
+	}
+	if(x >= ST7565R_W){
+		return;
+	}
+	
+	//»æÖÆ
+	if(on){
+		//page = (y-y%8)/8
+		st7565r->status.ram[y/8][x] |= (1<<y%8);
+	}else{
+		st7565r->status.ram[y/8][x] &= (~(1<<y%8));
+	}
+}
+
+
+/**********************************************************  **********************************************************/
+
+static void DRV_ST7565R_Transmit(DRV_ST7565R *st7565r, uint8_t dev, uint8_t *data, uint16_t len)
 {
 	if(st7565r->hal.iic_transmit != NULL){
 		st7565r->hal.iic_transmit(dev, data, len);
@@ -11,7 +123,7 @@ void DRV_ST7565R_Transmit(DRV_ST7565R *st7565r, uint8_t dev, uint8_t *data, uint
 		
 	}
 }
-void DRV_ST7565R_Receive(DRV_ST7565R *st7565r, uint8_t dev, uint8_t *data, uint16_t len)
+static void DRV_ST7565R_Receive(DRV_ST7565R *st7565r, uint8_t dev, uint8_t *data, uint16_t len)
 {
 	if(st7565r->hal.iic_receive != NULL){
 		st7565r->hal.iic_receive(dev, data, len);
@@ -19,7 +131,7 @@ void DRV_ST7565R_Receive(DRV_ST7565R *st7565r, uint8_t dev, uint8_t *data, uint1
 		
 	}
 }
-void DRV_ST7565R_DelayMs(DRV_ST7565R *st7565r, uint32_t ms)
+static void DRV_ST7565R_DelayMs(DRV_ST7565R *st7565r, uint32_t ms)
 {
 	if(st7565r->hal.delay_ms != NULL){
 		st7565r->hal.delay_ms(ms);
@@ -45,18 +157,19 @@ static uint8_t DRV_ST7565R_ReadByte(DRV_ST7565R *st7565r, uint8_t reg_addr)
 
 /**********************************************************  **********************************************************/
 
-static void DRV_ST7565R_WriteCmd(DRV_ST7565R *st7565r, uint8_t cmd)//д����
+static void DRV_ST7565R_WriteCmd(DRV_ST7565R *st7565r, uint8_t cmd)//Ð´ÃüÁî
 {
 	//CMD regAddr 0x00
 	DRV_ST7565R_WriteByte(st7565r, 0x00, cmd);
 }
-static void DRV_ST7565R_WriteData(DRV_ST7565R *st7565r, uint8_t cmd)//д����
+static void DRV_ST7565R_WriteData(DRV_ST7565R *st7565r, uint8_t cmd)//Ð´Êý¾Ý
 {
 	//DATA regAddr 0x40
 	DRV_ST7565R_WriteByte(st7565r, 0x40, cmd);
 }
 
 
+/**********************************************************  **********************************************************/
 
 
 static void DRV_ST7565R_SetDisplay(DRV_ST7565R *st7565r, bool on)
@@ -72,7 +185,7 @@ static void DRV_ST7565R_SetStartLine(DRV_ST7565R *st7565r, uint8_t line)
 	DRV_ST7565R_WriteCmd(st7565r, 0x40 | line);
 }
 
-static void DRV_ST7565R_SetPoint(DRV_ST7565R *st7565r, uint8_t x, uint8_t page) //������ʼ������
+static void DRV_ST7565R_SetPoint(DRV_ST7565R *st7565r, uint8_t x, uint8_t page) //ÉèÖÃÆðÊ¼µã×ø±ê
 {
 	//[0,8]
 	DRV_ST7565R_WriteCmd(st7565r, 0xB0 | page);
@@ -184,67 +297,6 @@ static void DRV_ST7565R_Display(DRV_ST7565R *st7565r)
 		{
 			DRV_ST7565R_WriteData(st7565r, st7565r->status.ram[m][n]);
 		}
-	}
-}
-
-/**********************************************************  **********************************************************/
-//��ʼ��OLED
-void DRV_ST7565R_Init(DRV_ST7565R *st7565r, uint8_t fill){
-	DRV_ST7565R_DelayMs(st7565r, 100);//�������ʱ����Ҫ
-	
-	DRV_ST7565R_SetDisplay(st7565r, false);
-		
-	DRV_ST7565R_WriteCmd(st7565r,0x20);	//Set Memory Addressing Mode	
-	DRV_ST7565R_WriteCmd(st7565r, 0x10);	//00,Horizontal Addressing Mode;01,Vertical Addressing Mode;10,Page Addressing Mode (RESET);11,Invalid
-	
-	
-	DRV_ST7565R_SetMultiplex(st7565r, 0x3F);//
-	DRV_ST7565R_SetRamDisable(st7565r, false);
-	DRV_ST7565R_SetOffset(st7565r, 0);
-	DRV_ST7565R_SetCycDiv(st7565r, 0xf0);
-	DRV_ST7565R_SetChargeCycNum(st7565r, 0x22);
-	DRV_ST7565R_SetCom_(st7565r, 0x12);//
-	DRV_ST7565R_SetVcomh(st7565r, 0x20);//=Vcc*0.77
-	DRV_ST7565R_SetDcdc(st7565r, true);
-	
-	DRV_ST7565R_SetContrast(st7565r, 50);
-	
-	DRV_ST7565R_SetStartLine(st7565r, 0);
-	DRV_ST7565R_SetPoint(st7565r, 0, 0);
-	DRV_ST7565R_SetReverseLR(st7565r, false);
-	DRV_ST7565R_SetReverseUP(st7565r, false);
-	DRV_ST7565R_SetReversePoint(st7565r, false);
-	
-	DRV_ST7565R_SetDisplay(st7565r, true);
-	
-	DRV_ST7565R_DelayMs(st7565r, 100); //�������ʱ����Ҫ
-	memset(st7565r->status.ram , fill, ST7565R_PAGE*ST7565R_W);
-	DRV_ST7565R_Display(st7565r);
-}
-
-void DRV_ST7565R_Refresh(DRV_ST7565R *st7565r){
-	DRV_ST7565R_Display(st7565r);
-}
-
-void DRV_ST7565R_Point(DRV_ST7565R *st7565r, uint8_t x, uint8_t y, bool on){
-	//ƫ��
-	x += st7565r->set.dx;
-	y += st7565r->set.dy;
-	
-	//�ж�
-	if(y >= ST7565R_H){
-		return;
-	}
-	if(x >= ST7565R_W){
-		return;
-	}
-	
-	//����
-	if(on){
-		//page = (y-y%8)/8
-		st7565r->status.ram[y/8][x] |= (1<<y%8);
-	}else{
-		st7565r->status.ram[y/8][x] &= (~(1<<y%8));
 	}
 }
 
